@@ -56,7 +56,7 @@ class Terrain:
         self.env_origins = np.zeros((cfg.num_rows, cfg.num_cols, 3))
         self.terrain_type = np.zeros((cfg.num_rows, cfg.num_cols))
         # self.env_slope_vec = np.zeros((cfg.num_rows, cfg.num_cols, 3))
-        self.goals = np.zeros((cfg.num_rows, cfg.num_cols, cfg.num_goals, 3))
+        self.goals = np.zeros((cfg.num_rows, cfg.num_cols,  max(cfg.num_goals, 1), 3))
         self.num_goals = cfg.num_goals
 
         self.width_per_env_pixels = int(self.env_width / cfg.horizontal_scale)
@@ -349,7 +349,11 @@ class Terrain:
             env_origin_z = np.max(terrain.height_field_raw[x1:x2, y1:y2])*terrain.vertical_scale
         self.env_origins[i, j] = [env_origin_x, env_origin_y, env_origin_z]
         self.terrain_type[i, j] = terrain.idx
-        self.goals[i, j, :, :2] = terrain.goals + [i * self.env_length, j * self.env_width]
+        if hasattr(terrain, 'goals') and self.cfg.num_goals > 0:
+            self.goals[i, j, :, :2] = terrain.goals + [i * self.env_length, j * self.env_width]
+        else:
+            self.goals[i, j, :, :2] = 0  # 初始化空目标点
+        # self.goals[i, j, :, :2] = terrain.goals + [i * self.env_length, j * self.env_width]
         # self.env_slope_vec[i, j] = terrain.slope_vector
 
 def gap_terrain(terrain, gap_size, platform_size=1.):

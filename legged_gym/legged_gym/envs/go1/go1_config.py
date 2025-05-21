@@ -102,5 +102,5 @@ class Go1RoughCfgPPO( LeggedRobotCfgPPO ):
     class runner( LeggedRobotCfgPPO.runner ):
         run_name = ''
         experiment_name = 'rough_a1'
-
+        max_iterations = 1000
   

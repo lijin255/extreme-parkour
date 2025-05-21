@@ -43,7 +43,7 @@ class LeggedRobotCfg(BaseConfig):
         n_scan = 132
         n_priv = 3+3 +3
         n_priv_latent = 4 + 1 + 12 +12
-        n_proprio = 3 + 2 + 3 + 4 + 36 + 5
+        n_proprio = 3 +2+ 3 + 2 + 4 + 36  #50
         history_len = 10
 
         num_observations = n_proprio + n_scan + history_len*n_proprio + n_priv_latent + n_priv #n_scan + n_proprio + n_priv #187 + 47 + 5 + 12 
@@ -170,25 +170,25 @@ class LeggedRobotCfg(BaseConfig):
         num_rows= 10 # number of terrain rows (levels)  # spreaded is benifitiall !
         num_cols = 40 # number of terrain cols (types)
         
-        terrain_dict = {"smooth slope": 0., 
-                        "rough slope up": 0.0,
-                        "rough slope down": 0.0,
+        terrain_dict = {"smooth slope": 0.1, 
+                        "rough slope up": 0.2,
+                        "rough slope down": 0.2,
                         "rough stairs up": 0., 
                         "rough stairs down": 0., 
-                        "discrete": 0., 
-                        "stepping stones": 0.0,
+                        "discrete": 0.2, 
+                        "stepping stones": 0.1,
                         "gaps": 0., 
-                        "smooth flat": 0,
-                        "pit": 0.0,
+                        "smooth flat": 0.1,
+                        "pit": 0.1,
                         "wall": 0.0,
                         "platform": 0.,
                         "large stairs up": 0.,
                         "large stairs down": 0.,
-                        "parkour": 0.2,
-                        "parkour_hurdle": 0.2,
-                        "parkour_flat": 0.2,
-                        "parkour_step": 0.2,
-                        "parkour_gap": 0.2,
+                        "parkour": 0.,
+                        "parkour_hurdle": 0.,
+                        "parkour_flat": 0.,
+                        "parkour_step": 0.,
+                        "parkour_gap": 0.,
                         "demo": 0.0,}
         terrain_proportions = list(terrain_dict.values())
         
@@ -196,7 +196,7 @@ class LeggedRobotCfg(BaseConfig):
         slope_treshold = 1.5# slopes above this threshold will be corrected to vertical surfaces
         origin_zero_z = True
 
-        num_goals = 8
+        num_goals = 0
 
     class commands:
         curriculum = False
@@ -293,22 +293,35 @@ class LeggedRobotCfg(BaseConfig):
     class rewards:
         class scales:
             # tracking rewards
-            tracking_goal_vel = 1.5
-            tracking_yaw = 0.5
+            # tracking_goal_vel = 1.5
+            # tracking_yaw = 0.5
             # regularization rewards
-            lin_vel_z = -1.0
-            ang_vel_xy = -0.05
-            orientation = -1.
-            dof_acc = -2.5e-7
-            collision = -10.
-            action_rate = -0.1
-            delta_torques = -1.0e-7
+            # lin_vel_z = -1.0
+            # ang_vel_xy = -0.05
+            # orientation = -1.
+            # dof_acc = -2.5e-7
+            # collision = -10.
+            # action_rate = -0.1
+            # delta_torques = -1.0e-7
             torques = -0.00001
-            hip_pos = -0.5
-            dof_error = -0.04
-            feet_stumble = -1
-            feet_edge = -1
+            # hip_pos = -0.5
+            # dof_error = -0.04
+            # feet_stumble = -1
+            # feet_edge = -1
+            velocity_tracking_xy = 0.75
+            velocity_tracking_z = 0.75
+            linear_orthogonal_vel = 0.75
+            body_motion = 1.0
+            collision =0.1
+            joint_motion = 0.001
+            joint_constraint =0.08
+            smooth_actions =0.003
+            slip = 0.003
+            foot_clearance_up = -0.5
+
+
             
+        clearance_height_target = -0.22 # target height above the terrain, in meters
         only_positive_rewards = True # if true negative total rewards are clipped at zero (avoids early termination problems)
         tracking_sigma = 0.2 # tracking reward = exp(-error^2/sigma)
         soft_dof_pos_limit = 1. # percentage of urdf limits, values above this limit are penalized
@@ -407,7 +420,7 @@ class LeggedRobotCfgPPO(BaseConfig):
         max_iterations = 50000 # number of policy updates
 
         # logging
-        save_interval = 100 # check for potential saves every this many iterations
+        save_interval = 1000 # check for potential saves every this many iterations
         experiment_name = 'rough_a1'
         run_name = ''
         # load and resume
