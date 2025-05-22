@@ -60,8 +60,9 @@ def play(args):
         web_viewer = webviewer.WebViewer()
     faulthandler.enable()
     exptid = args.exptid
+    # log_pth = "../../logs/{}/".format(args.proj_name) + args.exptid
     log_pth = "../../logs/{}/".format(args.proj_name) + args.exptid
-
+    print("Loading from: ", log_pth)
     env_cfg, train_cfg = task_registry.get_cfgs(name=args.task)
     # override some parameters for testing
     if args.nodelay:
@@ -72,26 +73,26 @@ def play(args):
     env_cfg.terrain.num_rows = 5
     env_cfg.terrain.num_cols = 5
     env_cfg.terrain.height = [0.02, 0.02]
-    env_cfg.terrain.terrain_dict = {"smooth slope": 0., 
-                                    "rough slope up": 0.0,
+    env_cfg.terrain.terrain_dict = {"smooth slope": 0.2, 
+                                    "rough slope up": 0.4,
                                     "rough slope down": 0.0,
                                     "rough stairs up": 0., 
                                     "rough stairs down": 0., 
-                                    "discrete": 0., 
+                                    "discrete": 0.2, 
                                     "stepping stones": 0.0,
                                     "gaps": 0., 
                                     "smooth flat": 0,
                                     "pit": 0.0,
                                     "wall": 0.0,
-                                    "platform": 0.,
+                                    "platform": 0.2,
                                     "large stairs up": 0.,
                                     "large stairs down": 0.,
-                                    "parkour": 0.2,
-                                    "parkour_hurdle": 0.2,
+                                    "parkour": 0.,
+                                    "parkour_hurdle": 0.,
                                     "parkour_flat": 0.,
-                                    "parkour_step": 0.2,
-                                    "parkour_gap": 0.2, 
-                                    "demo": 0.2}
+                                    "parkour_step": 0.,
+                                    "parkour_gap": 0., 
+                                    "demo": 0.}
     
     env_cfg.terrain.terrain_proportions = list(env_cfg.terrain.terrain_dict.values())
     env_cfg.terrain.curriculum = False
@@ -163,16 +164,23 @@ def play(args):
                 actions = ppo_runner.alg.depth_actor(obs.detach(), hist_encoding=True, scandots_latent=depth_latent)
             else:
                 actions = policy(obs.detach(), hist_encoding=True, scandots_latent=depth_latent)
-            
+        # --------------------------------debug----------------------------
+        # 
+        # q_dot = env.dof_vel  
+        # q_ddot = (env.dof_vel -env.last_dof_vel) / env.dt
+        # penalty = 0.01 * torch.sum(q_dot**2, dim=1) + torch.sum(q_ddot**2, dim=1)
+        # print("[debug]joint motion penalty:", -penalty)
+        #  
+        # --------------------------------debug---------------------------- 
         obs, _, rews, dones, infos = env.step(actions.detach())
         if args.web:
             web_viewer.render(fetch_results=True,
                         step_graphics=True,
                         render_all_camera_sensors=True,
                         wait_for_page_load=True)
-        print("time:", env.episode_length_buf[env.lookat_id].item() / 50, 
-              "cmd vx", env.commands[env.lookat_id, 0].item(),
-              "actual vx", env.base_lin_vel[env.lookat_id, 0].item(), )
+        # print("time:", env.episode_length_buf[env.lookat_id].item() / 50, 
+        #       "cmd vx", env.commands[env.lookat_id, 0].item(),
+        #       "actual vx", env.base_lin_vel[env.lookat_id, 0].item(), )
         
         id = env.lookat_id
         

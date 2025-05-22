@@ -38,7 +38,7 @@ class LeggedRobotCfg(BaseConfig):
         load_student_config = False
         mask_priv_obs = False
     class env:
-        num_envs = 6144
+        num_envs = 4096
 
         n_scan = 132
         n_priv = 3+3 +3
@@ -201,26 +201,27 @@ class LeggedRobotCfg(BaseConfig):
     class commands:
         curriculum = False
         max_curriculum = 1.
-        num_commands = 4 # default: lin_vel_x, lin_vel_y, ang_vel_yaw, heading (in heading mode ang_vel_yaw is recomputed from heading error)
+        num_commands = 5 # default: lin_vel_x, lin_vel_y, ang_vel_yaw, heading (in heading mode ang_vel_yaw is recomputed from heading error)
         resampling_time = 6. # time before command are changed[s]
         heading_command = True # if true: compute ang vel command from heading error
         
-        lin_vel_clip = 0.2
-        ang_vel_clip = 0.4
+        lin_vel_x_clip = 0.1
+        lin_vel_y_clip = 0.05
+        ang_vel_yaw_clip = 0.05
         # Easy ranges
         class ranges:
             lin_vel_x = [0., 1.5] # min max [m/s]
-            lin_vel_y = [0.0, 0.0]   # min max [m/s]
-            ang_vel_yaw = [0, 0]    # min max [rad/s]
+            lin_vel_y = [-0.3, 0.3]   # min max [m/s]
+            ang_vel_yaw = [-0.5, 0.5]    # min max [rad/s]
             heading = [0, 0]
-
+            base_height = [0.25, 0.25]
         # Easy ranges
         class max_ranges:
             lin_vel_x = [0.3, 0.8] # min max [m/s]
             lin_vel_y = [-0.3, 0.3]#[0.15, 0.6]   # min max [m/s]
-            ang_vel_yaw = [-0, 0]    # min max [rad/s]
+            ang_vel_yaw = [-0.5, 0.5]    # min max [rad/s]
             heading = [-1.6, 1.6]
-
+            base_height = [0.25, 0.25]
         class crclm_incremnt:
             lin_vel_x = 0.1 # min max [m/s]
             lin_vel_y = 0.1  # min max [m/s]
@@ -292,38 +293,21 @@ class LeggedRobotCfg(BaseConfig):
         
     class rewards:
         class scales:
-            # tracking rewards
-            # tracking_goal_vel = 1.5
-            # tracking_yaw = 0.5
-            # regularization rewards
-            # lin_vel_z = -1.0
-            # ang_vel_xy = -0.05
-            # orientation = -1.
-            # dof_acc = -2.5e-7
-            # collision = -10.
-            # action_rate = -0.1
-            # delta_torques = -1.0e-7
+            termination = 0.0
+            tracking_lin_vel = 2.0
+            tracking_ang_vel = 1.5
+
+            bounds_loss_coef = 0.0
+            locomotion_height = 0.1
+            lin_vel_z = 0.0
+            ang_vel_xy = 0.0
+            orientation = 0.0
             torques = -0.00001
-            # hip_pos = -0.5
-            # dof_error = -0.04
-            # feet_stumble = -1
-            # feet_edge = -1
-            velocity_tracking_xy = 0.75
-            velocity_tracking_z = 0.75
-            linear_orthogonal_vel = 0.75
-            body_motion = 1.0
-            collision =0.1
-            joint_motion = 0.001
-            joint_constraint =0.08
-            smooth_actions =0.003
-            slip = 0.003
-            foot_clearance_up = -0.5
 
 
-            
-        clearance_height_target = -0.22 # target height above the terrain, in meters
+
         only_positive_rewards = True # if true negative total rewards are clipped at zero (avoids early termination problems)
-        tracking_sigma = 0.2 # tracking reward = exp(-error^2/sigma)
+        tracking_sigma = 0.25 # tracking reward = exp(-error^2/sigma)
         soft_dof_pos_limit = 1. # percentage of urdf limits, values above this limit are penalized
         soft_dof_vel_limit = 1
         soft_torque_limit = 0.4

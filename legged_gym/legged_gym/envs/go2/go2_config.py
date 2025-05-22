@@ -50,24 +50,24 @@ class Go2RoughCfg( LeggedRobotCfg ):
             'RR_calf_joint': -1.5,    # [rad]
         }
 
-    class init_state_slope( LeggedRobotCfg.init_state ):
-        pos = [0.56, 0.0, 0.24] # x,y,z [m]
-        default_joint_angles = { # = target angles [rad] when action = 0.0
-            'FL_hip_joint': 0.03,   # [rad]
-            'RL_hip_joint': 0.03,   # [rad]
-            'FR_hip_joint': -0.03,  # [rad]
-            'RR_hip_joint': -0.03,   # [rad]
+    # class init_state_slope( LeggedRobotCfg.init_state ):
+    #     pos = [0.56, 0.0, 0.24] # x,y,z [m]
+    #     default_joint_angles = { # = target angles [rad] when action = 0.0
+    #         'FL_hip_joint': 0.03,   # [rad]
+    #         'RL_hip_joint': 0.03,   # [rad]
+    #         'FR_hip_joint': -0.03,  # [rad]
+    #         'RR_hip_joint': -0.03,   # [rad]
 
-            'FL_thigh_joint': 1.0,     # [rad]
-            'RL_thigh_joint': 1.9,   # [rad]1.8
-            'FR_thigh_joint': 1.0,     # [rad]
-            'RR_thigh_joint': 1.9,   # [rad]
+    #         'FL_thigh_joint': 1.0,     # [rad]
+    #         'RL_thigh_joint': 1.9,   # [rad]1.8
+    #         'FR_thigh_joint': 1.0,     # [rad]
+    #         'RR_thigh_joint': 1.9,   # [rad]
 
-            'FL_calf_joint': -2.2,   # [rad]
-            'RL_calf_joint': -0.9,    # [rad]
-            'FR_calf_joint': -2.2,  # [rad]
-            'RR_calf_joint': -0.9,    # [rad]
-        }
+    #         'FL_calf_joint': -2.2,   # [rad]
+    #         'RL_calf_joint': -0.9,    # [rad]
+    #         'FR_calf_joint': -2.2,  # [rad]
+    #         'RR_calf_joint': -0.9,    # [rad]
+    #     }
         
     class control( LeggedRobotCfg.control ):
         # PD Drive parameters:
@@ -86,15 +86,38 @@ class Go2RoughCfg( LeggedRobotCfg ):
         file = '{LEGGED_GYM_ROOT_DIR}/resources/robots/go2/urdf/go2.urdf'
         foot_name = "foot"
         penalize_contacts_on = ["thigh", "calf"]
-        terminate_after_contacts_on = ["base"]#, "thigh", "calf"]
+        terminate_after_contacts_on = ["base","hip"]#, "thigh", "calf"]
         self_collisions = 1 # 1 to disable, 0 to enable...bitwise filter
   
     class rewards( LeggedRobotCfg.rewards ):
         soft_dof_pos_limit = 0.9
-        base_height_target = 0.30
-        # class scales( LeggedRobotCfg.rewards.scales ):
-            # torques = -0.0002
-            # dof_pos_limits = -10.0
+        base_height_target = 0.25
+        class scales( LeggedRobotCfg.rewards.scales ):
+            termination = 0.0
+            tracking_lin_vel = 2.0
+            tracking_ang_vel = 1.5
+
+            bounds_loss_coef = 0.0
+            locomotion_height = 0.1
+            lin_vel_z = 0.0
+            ang_vel_xy = 0.0
+            orientation = 0.0
+            torques = -0.00001
+            delta_torques = -1.0e-7
+            dof_vel = 0.0
+            dof_acc = -2.5e-7
+            base_height = 0.0
+            feet_air_time = 0.0
+            collision = -10.
+            feet_stumble = 0.0
+            action_rate = -0.1
+            stand_still = 0.0
+            dof_pos_limits = -0.1
+            dof_vel_limits = -0.1
+            hip_pos = -0.5
+            dof_error = -0.1
+
+            torque_limits = -0.03
 
 class Go2RoughCfgPPO( LeggedRobotCfgPPO ):
     class algorithm( LeggedRobotCfgPPO.algorithm ):
@@ -102,5 +125,5 @@ class Go2RoughCfgPPO( LeggedRobotCfgPPO ):
     class runner( LeggedRobotCfgPPO.runner ):
         run_name = ''
         experiment_name = 'rough_go2'
-        max_iterations = 50000
+        max_iterations = 20000
   
