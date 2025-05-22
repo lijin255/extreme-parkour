@@ -391,12 +391,14 @@ class LeggedRobot(BaseTask):
         #     self.delta_next_yaw = self.next_target_yaw - self.yaw
         obs_buf = torch.cat((#skill_vector, 
                             self.base_ang_vel  * self.obs_scales.ang_vel,   #[1,3]
+                            self.base_lin_vel * self.obs_scales.lin_vel,   #[1,3]
+                            # self.measured_heights,
                             imu_obs,    #[1,2]
                             # 0*self.delta_yaw[:, None], 
                             # self.delta_yaw[:, None], #取消偏航角
                             # self.delta_next_yaw[:, None],
                             # 0*self.commands[:, 0:2], 
-                            self.commands[:, 0:3],  #[1,3]
+                            self.commands[:, :],  #[1,5]
                             (self.env_class != 17).float()[:, None], 
                             (self.env_class == 17).float()[:, None],
                             self.reindex((self.dof_pos - self.default_dof_pos_all) * self.obs_scales.dof_pos),
@@ -418,7 +420,7 @@ class LeggedRobot(BaseTask):
             self.obs_buf = torch.cat([obs_buf, heights, priv_explicit, priv_latent, self.obs_history_buf.view(self.num_envs, -1)], dim=-1)
         else:
             self.obs_buf = torch.cat([obs_buf, priv_explicit, priv_latent, self.obs_history_buf.view(self.num_envs, -1)], dim=-1)
-        obs_buf[:, 6:8] = 0  # mask yaw in proprioceptive history
+        # obs_buf[:, 6:8] = 0  # mask yaw in proprioceptive history
         self.obs_history_buf = torch.where(
             (self.episode_length_buf <= 1)[:, None, None], 
             torch.stack([obs_buf] * self.cfg.env.history_len, dim=1),
@@ -758,6 +760,8 @@ class LeggedRobot(BaseTask):
         self.last_contacts = torch.zeros(self.num_envs, len(self.feet_indices), dtype=torch.bool, device=self.device, requires_grad=False)
         self.base_lin_vel = quat_rotate_inverse(self.base_quat, self.root_states[:, 7:10])
         self.base_ang_vel = quat_rotate_inverse(self.base_quat, self.root_states[:, 10:13])
+
+        self.base_height = self.root_states[:, 2]
         self.projected_gravity = quat_rotate_inverse(self.base_quat, self.gravity_vec)
         if self.cfg.terrain.measure_heights:
             self.height_points = self._init_height_points()
