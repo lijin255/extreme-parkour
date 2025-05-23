@@ -273,7 +273,7 @@ class LeggedRobot(BaseTask):
         self.last_root_vel[:] = self.root_states[:, 7:13]
         if self.viewer and self.enable_viewer_sync and self.debug_viz:
             self.gym.clear_lines(self.viewer)
-            # self._draw_height_samples()
+            self._draw_height_samples()
             # self._draw_goals()
             self._draw_feet()
             if self.cfg.depth.use_camera:
@@ -392,7 +392,7 @@ class LeggedRobot(BaseTask):
         obs_buf = torch.cat((#skill_vector, 
                             self.base_ang_vel  * self.obs_scales.ang_vel,   #[1,3]
                             self.base_lin_vel * self.obs_scales.lin_vel,   #[1,3]
-                            # self.measured_heights,
+                            self.base_height_com,
                             imu_obs,    #[1,2]
                             # 0*self.delta_yaw[:, None], 
                             # self.delta_yaw[:, None], #取消偏航角
@@ -406,6 +406,7 @@ class LeggedRobot(BaseTask):
                             self.reindex(self.action_history_buf[:, -1]),
                             self.reindex_feet(self.contact_filt.float()-0.5),
                             ),dim=-1)
+        # print(obs_buf.shape)
         priv_explicit = torch.cat((self.base_lin_vel * self.obs_scales.lin_vel,
                                    0 * self.base_lin_vel,
                                    0 * self.base_lin_vel), dim=-1)
@@ -753,6 +754,9 @@ class LeggedRobot(BaseTask):
         self.action_history_buf = torch.zeros(self.num_envs, self.cfg.domain_rand.action_buf_len, self.num_dofs, device=self.device, dtype=torch.float)
         self.contact_buf = torch.zeros(self.num_envs, self.cfg.env.contact_buf_len, 4, device=self.device, dtype=torch.float)
 
+        if self.cfg.terrain.measure_heights:
+            self.height_points = self._init_height_points()
+        self.measured_heights = 0
         self.commands = torch.zeros(self.num_envs, self.cfg.commands.num_commands, dtype=torch.float, device=self.device, requires_grad=False) # x vel, y vel, yaw vel, heading
         self._resample_commands(torch.arange(self.num_envs, device=self.device, requires_grad=False))
         self.commands_scale = torch.tensor([self.obs_scales.lin_vel, self.obs_scales.lin_vel, self.obs_scales.ang_vel], device=self.device, requires_grad=False,) # TODO change this
@@ -762,10 +766,9 @@ class LeggedRobot(BaseTask):
         self.base_ang_vel = quat_rotate_inverse(self.base_quat, self.root_states[:, 10:13])
 
         self.base_height = self.root_states[:, 2]
+        self.base_height_com = torch.mean(self.base_height.unsqueeze(1) - self.measured_heights, dim=1,keepdim=True)
         self.projected_gravity = quat_rotate_inverse(self.base_quat, self.gravity_vec)
-        if self.cfg.terrain.measure_heights:
-            self.height_points = self._init_height_points()
-        self.measured_heights = 0
+
 
         # joint positions offsets and PD gains
         self.default_dof_pos = torch.zeros(self.num_dof, dtype=torch.float, device=self.device, requires_grad=False)
@@ -1361,144 +1364,13 @@ class LeggedRobot(BaseTask):
                                self.cfg.rewards.max_contact_force)
 
         return torch.exp(-force_balance_error / self.cfg.rewards.tracking_sigma)
-######################WALKING REWARDS####################
-    # def _reward_velocity_tracking_xy(self):
-    # # 计算实际速度与目标速度的相关量
-    #     lin_vel_xy = self.base_lin_vel[:, :2]  # 获取线速度 (num_envs, 2)
-    #     desired_lin_vel_xy = self.commands[:, :2]  # 从命令中获取目标速度
-        
-    #     # 计算速度模长和点积
-    #     desired_velocity_norm = torch.norm(desired_lin_vel_xy, dim=1)
-    #     velocity_norm_sq = torch.sum(lin_vel_xy**2, dim=1)
-    #     v_dot_vdes = torch.sum(lin_vel_xy * desired_lin_vel_xy, dim=1)
-        
-    #     # 三种情况的条件判断
-    #     condition_zero = desired_velocity_norm < 1e-6  # 目标速度为零的阈值
-    #     condition_aligned = v_dot_vdes >= desired_velocity_norm  # 速度已对齐
-        
-    #     # 根据条件计算奖励值
-    #     reward = torch.where(
-    #         condition_zero,
-    #         torch.exp(-velocity_norm_sq),  # 情况1：目标速度为零时的奖励
-    #         torch.where(
-    #             condition_aligned,
-    #             torch.ones_like(v_dot_vdes),  # 情况2：速度对齐时的最大奖励
-    #             torch.exp(-(v_dot_vdes - desired_velocity_norm)**2)  # 情况3：未对齐时的惩罚
-    #         )
-    #     )   
-    #     return reward
-    # def _reward_velocity_tracking_z(self):
-    # # 计算实际速度与目标速度的相关量
-    #     lin_ang_z = self.base_ang_vel[:,2]  # 获取线速度 (num_envs, 2)
-    #     desired_lin_ang_z = self.commands[:, 2]  # 从命令中获取目标速度
-        
-    #     # 计算速度模长和点积
-    #     desired_velocity_norm = torch.norm(desired_lin_ang_z)
-    #     velocity_norm_sq = torch.sum(lin_ang_z**2)
-    #     v_dot_vdes = torch.sum(lin_ang_z * desired_lin_ang_z)
-        
-    #     # 三种情况的条件判断
-    #     condition_zero = desired_velocity_norm < 1e-6  # 目标速度为零的阈值
-    #     condition_aligned = v_dot_vdes >= desired_velocity_norm  # 速度已对齐
-        
-    #     # 根据条件计算奖励值
-    #     reward = torch.where(
-    #         condition_zero,
-    #         torch.exp(-velocity_norm_sq),  # 情况1：目标速度为零时的奖励
-    #         torch.where(
-    #             condition_aligned,
-    #             torch.ones_like(v_dot_vdes),  # 情况2：速度对齐时的最大奖励
-    #             torch.exp(-(v_dot_vdes - desired_velocity_norm)**2)  # 情况3：未对齐时的惩罚
-    #         )
-    #     )   
-    #     return reward   
-    # def _reward_linear_orthogonal_vel(self):
-    #     """ 线性正交速度奖励函数 """
-    #     # 获取实际速度向量 (num_envs, 2)
-    #     v = self.base_lin_vel[:, :2]        
-    #     # 获取目标速度方向向量 (num_envs, 2)
-    #     vdes = self.commands[:, :2]
-    #     # 计算正交分量 vo = v - (v·vdes)*vdes
-    #     proj = torch.sum(v * vdes, dim=1, keepdim=True) * vdes
-    #     vo = v - proj 
-    #     # 计算奖励项 rlvo = exp(-3.0||vo||^2)
-    #     reward = torch.exp(-3.0 * torch.sum(vo**2, dim=1))
-    #     return reward
-    # def _reward_body_motion(self):
-    # # Z轴线速度平方项 (num_envs,)
-    #     vz_sq = torch.square(self.base_lin_vel[:, 2])
-    #     # 角速度XY分量绝对值 (num_envs,)
-    #     wx_abs = torch.abs(self.base_ang_vel[:, 0])
-    #     wy_abs = torch.abs(self.base_ang_vel[:, 1])
-    #     # 组合惩罚项
-    #     reward = -1.25 * vz_sq - 0.4 * (wx_abs + wy_abs)
-    #     return reward
-    # #TODO cpg中央控制器
-    # ###碰撞奖励碰撞奖励的设置在前面
-    # def _reward_joint_motion(self):
-    #     # 真实关节速度 (rad/s)
-    #     q_dot = self.dof_vel  
-    #     # 真实关节加速度 (rad/s²)
-    #     q_ddot = (self.dof_vel - self.last_dof_vel) / self.dt
-        
-    #     # 按照论文公式计算惩罚项
-    #     penalty = 0.01 * torch.sum(q_dot**2, dim=1) + torch.sum(q_ddot**2, dim=1)
-    #     print("[debug]joint v  a:", q_dot, q_ddot)
-    #     print("[debug]joint motion penalty:", -penalty)
-    #     return -penalty
-    # def _reward_joint_constraint(self):
-    #     # 获取所有关节角度 [num_envs, num_dofs]
-    #     all_joints = self.dof_pos  
-    #     # 获取所有关节的软限制范围 [num_dofs, 2]
-    #     joint_limits = self.dof_pos_limits 
-        
-    #     # 计算超出上下限的程度
-    #     over_upper = torch.clamp(all_joints - joint_limits[:, 1], min=0)
-    #     under_lower = torch.clamp(joint_limits[:, 0] - all_joints, min=0)
-    #     over_limit = over_upper + under_lower
-        
-    #     # 平方惩罚超出量并求和
-    #     return torch.sum(-torch.square(over_limit), dim=1)  
-    # def _reward_smooth_actions(self):
-    # # 获取当前及前两步的动作（假设动作历史缓冲区已维护）
-    #     current_actions = self.action_history_buf[:, -1]       # [num_envs, 12]
-    #     prev_actions_1 = self.action_history_buf[:, -2]         # [num_envs, 12]
-    #     prev_actions_2 = self.action_history_buf[:, -3]         # [num_envs, 12]
-        
-    #     # 计算一阶差分（速度项）
-    #     delta_1 = current_actions - prev_actions_1
-    #     # 计算二阶差分（加速度项）
-    #     delta_2 = current_actions - 2 * prev_actions_1 + prev_actions_2
-        
-    #     # 综合惩罚项
-    #     reward = - torch.sum(delta_1**2 + delta_2**2, dim=1)  #没有应用课程惩罚 TODO
-    #     return reward
-    # #扭矩奖励已经存在
-    # def _reward_slip(self):
-    #     # 获取脚部接触状态 (num_envs, 4)
-    #     foot_contacts = self.contact_forces[:, self.feet_indices, 2] > 10
-        
-    #     # 获取脚部线速度 (num_envs, 4, 2)
-    #     feet_vel = self.rigid_body_states[:, self.feet_indices, 7:9]  # [x,y]线速度
-    #     # 计算速度平方和（仅考虑接触时的速度）
-    #     vel_sq = torch.sum(feet_vel**2, dim=-1)  # (num_envs, 4)
-    #     slip_penalty = torch.where(foot_contacts, vel_sq, torch.zeros_like(vel_sq))
-    #     return -torch.sum(slip_penalty, dim=1)
-    # def _reward_feet_air_time(self):#没用上
-    #     # Reward long steps
-    #     # Need to filter the contacts because the contact reporting of PhysX is unreliable on meshes
-    #     contact = self.contact_forces[:, self.feet_indices, 2] > 1.
-    #     contact_filt = torch.logical_or(contact, self.last_contacts) 
-    #     self.last_contacts = contact
-    #     first_contact = (self.feet_air_time > 0.) * contact_filt
-    #     self.feet_air_time += self.dt
-    #     rew_airTime = torch.sum((self.feet_air_time - 0.5) * first_contact, dim=1) # reward only on first contact with the ground
-    #     #rew_airTime = torch.sum((self.feet_air_time - 0.3) * first_contact, dim=1)
-    #     #rew_airTime = torch.sum((self.feet_air_time - 0.2) * first_contact, dim=1)
-    #     rew_airTime *= torch.norm(self.commands[:, :2], dim=1) > 0.1 #no reward for zero command
-    #     self.feet_air_time *= ~contact_filt
-    #     return rew_airTime
-    # def _reward_foot_clearance_up(self):
+    # ----------------------add--------------
+    def _reward_orientation_up(self):
+        # Penalize non flat base orientation
+        return torch.sum(torch.square(self.projected_gravity[:, :2]), dim=1)*torch.clamp(-self.projected_gravity[:,2],0,1)
+    def _reward_upward(self):
+        return 1 - self.projected_gravity[:,2]
+    def _reward_foot_clearance_up(self):
         cur_footpos_translated = self.feet_pos - self.root_states[:, 0:3].unsqueeze(1)
         footpos_in_body_frame = torch.zeros(self.num_envs, len(self.feet_indices), 3, device=self.device)
         cur_footvel_translated = self.feet_vel - self.root_states[:, 7:10].unsqueeze(1)

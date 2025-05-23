@@ -170,7 +170,8 @@ def play(args):
         # q_ddot = (env.dof_vel -env.last_dof_vel) / env.dt
         # penalty = 0.01 * torch.sum(q_dot**2, dim=1) + torch.sum(q_ddot**2, dim=1)
         # print("[debug]joint motion penalty:", -penalty)
-        #  
+        base_height = torch.mean(env.root_states[:, 2].unsqueeze(1) - env.measured_heights, dim=1,keepdim=True)
+        print("[debug]base_height: ", base_height,base_height.shape)
         # --------------------------------debug---------------------------- 
         obs, _, rews, dones, infos = env.step(actions.detach())
         if args.web:

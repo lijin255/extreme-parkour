@@ -38,12 +38,12 @@ class LeggedRobotCfg(BaseConfig):
         load_student_config = False
         mask_priv_obs = False
     class env:
-        num_envs = 8192
+        num_envs = 4096
 
         n_scan = 132
         n_priv = 3+3 +3
         n_priv_latent = 4 + 1 + 12 +12
-        n_proprio = 55  #50
+        n_proprio = 56  #50
         history_len = 10
 
         num_observations = n_proprio + n_scan + history_len*n_proprio + n_priv_latent + n_priv #n_scan + n_proprio + n_priv #187 + 47 + 5 + 12 
@@ -170,12 +170,12 @@ class LeggedRobotCfg(BaseConfig):
         num_rows= 10 # number of terrain rows (levels)  # spreaded is benifitiall !
         num_cols = 40 # number of terrain cols (types)
         
-        terrain_dict = {"smooth slope": 0.1, 
-                        "rough slope up": 0.2,
-                        "rough slope down": 0.2,
-                        "rough stairs up": 0., 
+        terrain_dict = {"smooth slope": 0.2, 
+                        "pyramid_sloped": 0.3,
+                        "discrete_obstacles": 0.2,
+                        "stepping_stones": 0.3, 
                         "rough stairs down": 0., 
-                        "discrete": 0.2, 
+                        "discrete": 0., 
                         "stepping stones": 0.1,
                         "gaps": 0., 
                         "smooth flat": 0.1,

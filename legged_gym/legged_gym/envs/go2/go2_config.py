@@ -31,51 +31,31 @@
 from legged_gym.envs.base.legged_robot_config import LeggedRobotCfg, LeggedRobotCfgPPO
 
 class Go2RoughCfg( LeggedRobotCfg ):
-    class init_state( LeggedRobotCfg.init_state ):
-        pos = [0.0, 0.0, 0.42] # x,y,z [m]
-        default_joint_angles = { # = target angles [rad] when action = 0.0
-            'FL_hip_joint': 0.1,   # [rad]
-            'RL_hip_joint': 0.1,   # [rad]
-            'FR_hip_joint': -0.1 ,  # [rad]
-            'RR_hip_joint': -0.1,   # [rad]
+    class init_state(LeggedRobotCfg.init_state):
+        pos = [0.0, 0.0, 0.42]
+        default_joint_angles = {
+            'FL_hip_joint': 0.0,  # [rad]
+            'RL_hip_joint': 0.0,  # [rad]
+            'FR_hip_joint': 0.0,  # [rad]
+            'RR_hip_joint': 0.0,  # [rad]
 
-            'FL_thigh_joint': 0.8,     # [rad]
-            'RL_thigh_joint': 1.,   # [rad]
-            'FR_thigh_joint': 0.8,     # [rad]
-            'RR_thigh_joint': 1.,   # [rad]
+            'FL_thigh_joint': 0.9,  # [rad]
+            'RL_thigh_joint': 0.9,  # [rad]
+            'FR_thigh_joint': 0.9,  # [rad]
+            'RR_thigh_joint': 0.9,  # [rad]
 
-            'FL_calf_joint': -1.5,   # [rad]
-            'RL_calf_joint': -1.5,    # [rad]
-            'FR_calf_joint': -1.5,  # [rad]
-            'RR_calf_joint': -1.5,    # [rad]
+            'FL_calf_joint': -1.8,  # [rad]
+            'RL_calf_joint': -1.8,  # [rad]
+            'FR_calf_joint': -1.8,  # [rad]
+            'RR_calf_joint': -1.8,  # [rad]
         }
 
-    # class init_state_slope( LeggedRobotCfg.init_state ):
-    #     pos = [0.56, 0.0, 0.24] # x,y,z [m]
-    #     default_joint_angles = { # = target angles [rad] when action = 0.0
-    #         'FL_hip_joint': 0.03,   # [rad]
-    #         'RL_hip_joint': 0.03,   # [rad]
-    #         'FR_hip_joint': -0.03,  # [rad]
-    #         'RR_hip_joint': -0.03,   # [rad]
-
-    #         'FL_thigh_joint': 1.0,     # [rad]
-    #         'RL_thigh_joint': 1.9,   # [rad]1.8
-    #         'FR_thigh_joint': 1.0,     # [rad]
-    #         'RR_thigh_joint': 1.9,   # [rad]
-
-    #         'FL_calf_joint': -2.2,   # [rad]
-    #         'RL_calf_joint': -0.9,    # [rad]
-    #         'FR_calf_joint': -2.2,  # [rad]
-    #         'RR_calf_joint': -0.9,    # [rad]
-    #     }
         
     class control( LeggedRobotCfg.control ):
         # PD Drive parameters:
         control_type = 'P'
-        # stiffness = {'joint': 40.}  # [N*m/rad]
-        # damping = {'joint': 0.5}     # [N*m*s/rad]
-        stiffness = {'joint': 20.}  # [N*m/rad]
-        damping = {'joint': 0.5}     # [N*m*s/rad]
+        stiffness = {'joint': 40.}  # [N*m/rad]
+        damping = {'joint': 1.}     # [N*m*s/rad]
         # action scale: target angle = actionScale * action + defaultAngle
         action_scale = 0.25
         # decimation: Number of control action updates @ sim DT per policy DT
@@ -90,8 +70,9 @@ class Go2RoughCfg( LeggedRobotCfg ):
         self_collisions = 1 # 1 to disable, 0 to enable...bitwise filter
   
     class rewards( LeggedRobotCfg.rewards ):
-        soft_dof_pos_limit = 0.9
+        soft_dof_pos_limit = 1.0
         base_height_target = 0.25
+        clearance_height_target = -0.22
         class scales( LeggedRobotCfg.rewards.scales ):
             termination = 0.0
             tracking_lin_vel = 2.0
@@ -115,9 +96,12 @@ class Go2RoughCfg( LeggedRobotCfg ):
             dof_pos_limits = -0.1
             dof_vel_limits = -0.1
             hip_pos = -0.5
-            dof_error = -0.1
-
+            dof_error = -0.05#-0.1
             torque_limits = -0.03
+            # ----add---
+            orientation = -0.2
+            upward = 0.5
+            foot_clearance_up = -0.5
 
 class Go2RoughCfgPPO( LeggedRobotCfgPPO ):
     class algorithm( LeggedRobotCfgPPO.algorithm ):

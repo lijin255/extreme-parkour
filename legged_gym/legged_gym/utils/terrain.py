@@ -162,34 +162,30 @@ class Terrain:
         stone_distance = 0.05 if difficulty==0 else 0.1
         gap_size = 1. * difficulty
         pit_depth = 1. * difficulty
-        if choice < self.proportions[0]:
+        if choice < self.proportions[0]:#smooth slope
             idx = 0
             if choice < self.proportions[0]/ 2:
                 idx = 1
                 slope *= -1
             terrain_utils.pyramid_sloped_terrain(terrain, slope=slope, platform_size=3.)
             # self.add_roughness(terrain)
-        elif choice < self.proportions[2]:
-            idx = 2
-            if choice<self.proportions[1]:
-                idx = 3
-                slope *= -1
+        elif choice < self.proportions[1]:#pyramid_sloped
+            idx = 1
             terrain_utils.pyramid_sloped_terrain(terrain, slope=slope, platform_size=3.)
-            self.add_roughness(terrain)
-        elif choice < self.proportions[4]:
-            idx = 4
-            if choice<self.proportions[3]:
-                idx = 5
-                step_height *= -1
-            terrain_utils.pyramid_stairs_terrain(terrain, step_width=0.31, step_height=step_height, platform_size=3.)
-            self.add_roughness(terrain)
-        elif choice < self.proportions[5]:
-            idx = 6
+            terrain_utils.random_uniform_terrain(terrain, min_height=-0.05, max_height=0.05, step=0.005,
+                                                    downsampled_scale=0.2)
+        elif choice < self.proportions[2]:#discrete_obstacles
+            idx = 2
+
             num_rectangles = 20
-            rectangle_min_size = 0.5
+            rectangle_min_size = 1.
             rectangle_max_size = 2.
-            terrain_utils.discrete_obstacles_terrain(terrain, discrete_obstacles_height, rectangle_min_size, rectangle_max_size, num_rectangles, platform_size=3.)
-            self.add_roughness(terrain)
+            terrain_utils.discrete_obstacles_terrain(terrain, discrete_obstacles_height, rectangle_min_size,
+                                                        rectangle_max_size, num_rectangles, platform_size=3.)
+        elif choice < self.proportions[3]:#stepping_stones
+            idx = 3
+            terrain_utils.stepping_stones_terrain(terrain, stone_size=stepping_stones_size,
+                                                    stone_distance=stone_distance, max_height=0., platform_size=4.)
         elif choice < self.proportions[6]:
             idx = 7
             stones_size = 1.5 - 1.2*difficulty
