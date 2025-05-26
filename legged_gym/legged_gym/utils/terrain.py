@@ -155,7 +155,7 @@ class Terrain:
                                 length=self.width_per_env_pixels,
                                 vertical_scale=self.cfg.vertical_scale,
                                 horizontal_scale=self.cfg.horizontal_scale)
-        slope = difficulty * 0.4
+        slope = difficulty * 0.2
         step_height = 0.02 + 0.14 * difficulty
         discrete_obstacles_height = 0.03 + difficulty * 0.15
         stepping_stones_size = 1.5 * (1.05 - difficulty)
@@ -186,12 +186,17 @@ class Terrain:
             idx = 3
             terrain_utils.stepping_stones_terrain(terrain, stone_size=stepping_stones_size,
                                                     stone_distance=stone_distance, max_height=0., platform_size=4.)
-        elif choice < self.proportions[6]:
-            idx = 7
-            stones_size = 1.5 - 1.2*difficulty
-            # terrain_utils.stepping_stones_terrain(terrain, stone_size=stones_size, stone_distance=0.1, stone_distance_rand=0, max_height=0.04*difficulty, platform_size=2.)
-            half_sloped_terrain(terrain, wall_width=4, start2center=0.5, max_height=0.00)
-            stepping_stones_terrain(terrain, stone_size=1.5-0.2*difficulty, stone_distance=0.0+0.4*difficulty, max_height=0.2*difficulty, platform_size=1.2)
+            # ---------------------类似梅花桩-------------
+            # stones_size = 1.5 - 1.2*difficulty
+            # terrain_utils.stepping_stones_terrain(terrain, stone_size=stones_size, stone_distance=0.1,  max_height=0.04*difficulty, platform_size=2.)
+            # half_sloped_terrain(terrain, wall_width=4, start2center=0.5, max_height=0.00)
+            # stepping_stones_terrain(terrain, stone_size=1.5-0.2*difficulty, stone_distance=0.0+0.4*difficulty, max_height=0.2*difficulty, platform_size=1.2)
+            # ---------------------类似梅花桩-------------
+
+        elif choice < self.proportions[4]:
+            idx = 4
+            max_height = 0.01 + 0.04*difficulty
+            terrain_utils.random_uniform_terrain(terrain, min_height=-max_height, max_height=max_height, step=0.005, downsampled_scale=0.2)
             self.add_roughness(terrain)
         elif choice < self.proportions[7]:
             idx = 8

@@ -202,6 +202,9 @@ class OnPolicyRunner:
             
             stop = time.time()
             learn_time = stop - start
+            if self.log_dir is not None:
+                self.log(locals())
+            
             if it % self.save_interval == 0:
                 self.save(os.path.join(self.log_dir, 'model_{}.pt'.format(it)))
             
@@ -308,8 +311,10 @@ class OnPolicyRunner:
 
             if self.log_dir is not None:
                 self.log_vision(locals())
-            if (it % self.save_interval == 0):
-                self.save(os.path.join(self.log_dir, 'model_{}.pt'.format(it)))
+            if (it-self.start_learning_iteration < 2500 and it % self.save_interval == 0) or \
+               (it-self.start_learning_iteration < 5000 and it % (2*self.save_interval) == 0) or \
+               (it-self.start_learning_iteration >= 5000 and it % (5*self.save_interval) == 0):
+                    self.save(os.path.join(self.log_dir, 'model_{}.pt'.format(it)))
             ep_infos.clear()
     
     def log_vision(self, locs, width=80, pad=35):

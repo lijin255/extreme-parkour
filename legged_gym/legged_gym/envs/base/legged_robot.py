@@ -1386,3 +1386,7 @@ class LeggedRobot(BaseTask):
         clearance_reward = height_error * foot_leteral_vel 
         
         return torch.sum(clearance_reward, dim=1)*torch.clamp(-self.projected_gravity[:,2],0,1)
+    def _reward_foot_mirror_up(self):
+        diff1 = torch.sum(torch.square(self.dof_pos[:,[0,1,2]] - self.dof_pos[:,[9,10,11]]),dim=-1)
+        diff2 = torch.sum(torch.square(self.dof_pos[:,[3,4,5]] - self.dof_pos[:,[6,7,8]]),dim=-1)
+        return 0.5*torch.clamp(-self.projected_gravity[:,2],0,1)*(diff1 + diff2)

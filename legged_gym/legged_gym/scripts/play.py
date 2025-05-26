@@ -73,26 +73,26 @@ def play(args):
     env_cfg.terrain.num_rows = 5
     env_cfg.terrain.num_cols = 5
     env_cfg.terrain.height = [0.02, 0.02]
-    env_cfg.terrain.terrain_dict = {"smooth slope": 0.2, 
-                                    "rough slope up": 0.4,
-                                    "rough slope down": 0.0,
-                                    "rough stairs up": 0., 
-                                    "rough stairs down": 0., 
-                                    "discrete": 0.2, 
-                                    "stepping stones": 0.0,
-                                    "gaps": 0., 
-                                    "smooth flat": 0,
-                                    "pit": 0.0,
-                                    "wall": 0.0,
-                                    "platform": 0.2,
-                                    "large stairs up": 0.,
-                                    "large stairs down": 0.,
-                                    "parkour": 0.,
-                                    "parkour_hurdle": 0.,
-                                    "parkour_flat": 0.,
-                                    "parkour_step": 0.,
-                                    "parkour_gap": 0., 
-                                    "demo": 0.}
+    env_cfg.terrain.terrain_dict = {"smooth slope": 0., 
+                        "pyramid_sloped": 0.,
+                        "discrete_obstacles": 0.0,
+                        "stepping_stones": 1., 
+                        "random_uniform_terrain": 0., 
+                        "discrete": 0., 
+                        "stepping stones": 0.,
+                        "gaps": 0., 
+                        "smooth flat": 0.,
+                        "pit": 0.,
+                        "wall": 0.0,
+                        "platform": 0.,
+                        "large stairs up": 0.,
+                        "large stairs down": 0.,
+                        "parkour": 0.,
+                        "parkour_hurdle": 0.,
+                        "parkour_flat": 0.,
+                        "parkour_step": 0.,
+                        "parkour_gap": 0.,
+                        "demo": 0.0,}
     
     env_cfg.terrain.terrain_proportions = list(env_cfg.terrain.terrain_dict.values())
     env_cfg.terrain.curriculum = False
@@ -170,8 +170,8 @@ def play(args):
         # q_ddot = (env.dof_vel -env.last_dof_vel) / env.dt
         # penalty = 0.01 * torch.sum(q_dot**2, dim=1) + torch.sum(q_ddot**2, dim=1)
         # print("[debug]joint motion penalty:", -penalty)
-        base_height = torch.mean(env.root_states[:, 2].unsqueeze(1) - env.measured_heights, dim=1,keepdim=True)
-        print("[debug]base_height: ", base_height,base_height.shape)
+        # base_height = torch.mean(env.root_states[:, 2].unsqueeze(1) - env.measured_heights, dim=1,keepdim=True)
+        # print("[debug]base_height: ", base_height,base_height.shape)
         # --------------------------------debug---------------------------- 
         obs, _, rews, dones, infos = env.step(actions.detach())
         if args.web:

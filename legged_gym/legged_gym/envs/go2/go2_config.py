@@ -33,21 +33,21 @@ from legged_gym.envs.base.legged_robot_config import LeggedRobotCfg, LeggedRobot
 class Go2RoughCfg( LeggedRobotCfg ):
     class init_state(LeggedRobotCfg.init_state):
         pos = [0.0, 0.0, 0.42]
-        default_joint_angles = {
-            'FL_hip_joint': 0.0,  # [rad]
-            'RL_hip_joint': 0.0,  # [rad]
-            'FR_hip_joint': 0.0,  # [rad]
-            'RR_hip_joint': 0.0,  # [rad]
+        default_joint_angles = { # = target angles [rad] when action = 0.0
+            'FL_hip_joint': 0.1,   # [rad]
+            'RL_hip_joint': 0.1,   # [rad]
+            'FR_hip_joint': -0.1 ,  # [rad]
+            'RR_hip_joint': -0.1,   # [rad]
 
-            'FL_thigh_joint': 0.9,  # [rad]
-            'RL_thigh_joint': 0.9,  # [rad]
-            'FR_thigh_joint': 0.9,  # [rad]
-            'RR_thigh_joint': 0.9,  # [rad]
+            'FL_thigh_joint': 0.8,     # [rad]
+            'RL_thigh_joint': 1.,   # [rad]
+            'FR_thigh_joint': 0.8,     # [rad]
+            'RR_thigh_joint': 1.,   # [rad]
 
-            'FL_calf_joint': -1.8,  # [rad]
-            'RL_calf_joint': -1.8,  # [rad]
-            'FR_calf_joint': -1.8,  # [rad]
-            'RR_calf_joint': -1.8,  # [rad]
+            'FL_calf_joint': -1.5,   # [rad]
+            'RL_calf_joint': -1.5,    # [rad]
+            'FR_calf_joint': -1.5,  # [rad]
+            'RR_calf_joint': -1.5,    # [rad]
         }
 
         
@@ -79,30 +79,30 @@ class Go2RoughCfg( LeggedRobotCfg ):
             tracking_ang_vel = 1.5
 
             bounds_loss_coef = 0.0
-            locomotion_height = 0.1
+            locomotion_height = 0.
             lin_vel_z = 0.0
-            ang_vel_xy = 0.0
+            ang_vel_xy = -0.01
             orientation = 0.0
-            torques = -0.00001
-            delta_torques = -1.0e-7
-            dof_vel = 0.0
-            dof_acc = -2.5e-7
+            torques = -0.00001#惩罚总扭矩大小的平方
+            delta_torques = -1.0e-7#扭矩大小变化的平方
+            dof_vel = -2.5e-7
+            dof_acc = -2.5e-7#扭矩速度变化的平方
             base_height = 0.0
-            feet_air_time = 0.0
-            collision = -10.
+            feet_air_time = 1.0#脚步悬空
+            collision = -1.#所选位置的碰撞
             feet_stumble = 0.0
-            action_rate = -0.1
-            stand_still = 0.0
-            dof_pos_limits = -0.1
-            dof_vel_limits = -0.1
-            hip_pos = -0.5
-            dof_error = -0.05#-0.1
-            torque_limits = -0.03
+            action_rate = -0.001#惩罚动作的变化
+            stand_still = -0.1
+            dof_pos_limits = -0.1#惩罚关节位置太接近极限
+            dof_vel_limits = -0.1  #惩罚关节速度太接近极限
+            hip_pos = -0.0#惩罚hip位置偏离default的程度
+            dof_error = -0.0#-0.1# 惩罚所有关节位置偏离default的程度
+            torque_limits = -0.03#扭矩限制
             # ----add---
-            orientation = -0.2
-            upward = 0.5
-            foot_clearance_up = -0.5
-
+            orientation = -0.1#惩罚非水平姿态
+            upward = 0.1#奖励直立状态
+            foot_clearance_up = -0.#惩罚足部高度误差，和足端横向移动
+            foot_mirror_up =-0.05 #镜像对称
 class Go2RoughCfgPPO( LeggedRobotCfgPPO ):
     class algorithm( LeggedRobotCfgPPO.algorithm ):
         entropy_coef = 0.01
