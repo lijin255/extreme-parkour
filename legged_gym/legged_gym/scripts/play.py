@@ -46,7 +46,7 @@ from copy import deepcopy
 import matplotlib.pyplot as plt
 from time import time, sleep
 from legged_gym.utils import webviewer
-
+import plot
 def get_load_path(root, load_run=-1, checkpoint=-1, model_name_include="model"):
     if checkpoint==-1:
         models = [file for file in os.listdir(root) if model_name_include in file]
@@ -70,14 +70,15 @@ def play(args):
     env_cfg.env.num_envs = 16 if not args.save else 64
     env_cfg.env.episode_length_s = 60
     env_cfg.commands.resampling_time = 60
+
     env_cfg.terrain.num_rows = 5
     env_cfg.terrain.num_cols = 5
     env_cfg.terrain.height = [0.02, 0.02]
     env_cfg.terrain.terrain_dict = {"smooth slope": 0., 
                         "pyramid_sloped": 0.,
                         "discrete_obstacles": 0.0,
-                        "stepping_stones": 1., 
-                        "random_uniform_terrain": 0., 
+                        "stepping_stones": 0., 
+                        "random_uniform_terrain": 1., 
                         "discrete": 0., 
                         "stepping stones": 0.,
                         "gaps": 0., 
@@ -130,11 +131,11 @@ def play(args):
     estimator = ppo_runner.get_estimator_inference_policy(device=env.device)
     if env.cfg.depth.use_camera:
         depth_encoder = ppo_runner.get_depth_encoder_inference_policy(device=env.device)
-
+    update_plot = plot.plot_debug(env)
     actions = torch.zeros(env.num_envs, 12, device=env.device, requires_grad=False)
     infos = {}
     infos["depth"] = env.depth_buffer.clone().to(ppo_runner.device)[:, -1] if ppo_runner.if_depth else None
-
+    update_plot = plot.plot_debug(env)
     for i in range(10*int(env.max_episode_length)):
         if args.use_jit:
             if env.cfg.depth.use_camera:
@@ -172,6 +173,12 @@ def play(args):
         # print("[debug]joint motion penalty:", -penalty)
         # base_height = torch.mean(env.root_states[:, 2].unsqueeze(1) - env.measured_heights, dim=1,keepdim=True)
         # print("[debug]base_height: ", base_height,base_height.shape)
+        update_plot()
+        env.commands[:,0] = 1.2
+        env.commands[:,1] = 0
+        env.commands[:,2] = 0
+        env.commands[:,3] = 0
+        env.commands[:,4] = 0.25
         # --------------------------------debug---------------------------- 
         obs, _, rews, dones, infos = env.step(actions.detach())
         if args.web:

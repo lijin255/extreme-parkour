@@ -210,7 +210,7 @@ class LeggedRobotCfg(BaseConfig):
         ang_vel_yaw_clip = 0.05
         # Easy ranges
         class ranges:
-            lin_vel_x = [0., 1.5] # min max [m/s]
+            lin_vel_x = [-0.5, 1.5] # min max [m/s]
             lin_vel_y = [-0.3, 0.3]   # min max [m/s]
             ang_vel_yaw = [-0.5, 0.5]    # min max [rad/s]
             heading = [0, 0]
@@ -298,11 +298,11 @@ class LeggedRobotCfg(BaseConfig):
             tracking_ang_vel = 1.5
 
             bounds_loss_coef = 0.0
-            locomotion_height = 0.1
+            locomotion_height = 0.0
             lin_vel_z = 0.0
             ang_vel_xy = 0.0
             orientation = 0.0
-            torques = -0.00001
+            
 
 
 

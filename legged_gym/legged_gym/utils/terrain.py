@@ -198,11 +198,11 @@ class Terrain:
             max_height = 0.01 + 0.04*difficulty
             terrain_utils.random_uniform_terrain(terrain, min_height=-max_height, max_height=max_height, step=0.005, downsampled_scale=0.2)
             self.add_roughness(terrain)
-        elif choice < self.proportions[7]:
-            idx = 8
-            # gap_size = random.uniform(self.cfg.gap_size[0], self.cfg.gap_size[1])
-            gap_parkour_terrain(terrain, difficulty, platform_size=4)
-            self.add_roughness(terrain)
+        elif choice < self.proportions[5]:
+            idx = 5
+            #crawl TODO
+            terrain_utils.pyramid_sloped_terrain(terrain, slope=0.1, platform_size=3.)
+            # self.add_roughness(terrain)
         elif choice < self.proportions[8]:
             idx = 9
             self.add_roughness(terrain)

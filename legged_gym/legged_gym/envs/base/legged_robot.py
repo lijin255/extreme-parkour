@@ -1241,7 +1241,7 @@ class LeggedRobot(BaseTask):
 ######################BASE REWARDS####################
     def _reward_lin_vel_z(self):
         # Penalize z axis base linear velocity
-        return torch.square(self.base_lin_vel[:, 2])
+        return torch.square(self.base_lin_vel[:, 2]*torch.clamp(-self.projected_gravity[:, 2],0,1))
 
     def _reward_ang_vel_xy(self):
         # Penalize xy axes base angular velocity
@@ -1316,16 +1316,6 @@ class LeggedRobot(BaseTask):
         ang_vel_error = torch.square(self.commands[:, 2] - self.base_ang_vel[:, 2])
         return torch.exp(-ang_vel_error / self.cfg.rewards.tracking_sigma)
 
-    def _reward_locomotion_height(self):
-        if self.cfg.terrain.measure_heights:
-            root_h = self.root_states[:, 2] - self.measured_heights[:, self.measured_heights.shape[1] // 2 + 1]
-        else:
-            root_h = self.root_states[:, 2]
-        root_h_error_loc = torch.sqrt(torch.square(self.commands[:, 4] - root_h))
-        root_h_error_rwd_loc = torch.exp(-10.0 * torch.square(root_h_error_loc) / self.cfg.rewards.tracking_sigma)
-
-        return root_h_error_rwd_loc
-
     def _reward_feet_air_time(self):
         # Reward long steps
         # Need to filter the contacts because the contact reporting of PhysX is unreliable on meshes
@@ -1390,3 +1380,23 @@ class LeggedRobot(BaseTask):
         diff1 = torch.sum(torch.square(self.dof_pos[:,[0,1,2]] - self.dof_pos[:,[9,10,11]]),dim=-1)
         diff2 = torch.sum(torch.square(self.dof_pos[:,[3,4,5]] - self.dof_pos[:,[6,7,8]]),dim=-1)
         return 0.5*torch.clamp(-self.projected_gravity[:,2],0,1)*(diff1 + diff2)
+    # --------------crwal--------------------
+    def _reward_locomotion_height(self):
+        if self.cfg.terrain.measure_heights:
+            root_h = self.root_states[:, 2] - self.measured_heights[:, self.measured_heights.shape[1] // 2 + 1]
+            # print("[debug]done: ")
+            print("[debug]root_states[:, 2]:",self.root_states[:, 2])
+            print("[debug]measured_heights:",self.measured_heights[:, self.measured_heights.shape[1] // 2 + 1])
+        else:
+            root_h = self.root_states[:, 2]
+        root_h_error_loc = torch.sqrt(torch.square(self.commands[:, 4] - root_h))
+        root_h_error_rwd_loc = torch.exp(-10.0 * torch.square(root_h_error_loc) / self.cfg.rewards.tracking_sigma)
+
+        return root_h_error_rwd_loc
+    def _reward_hip_abduction(self):
+        # 奖励hip关节外展运动
+        target_hip_pos = 0.5 * (self.dof_pos_limits[self.hip_indices, 0] + self.dof_pos_limits[self.hip_indices, 1])  # 取关节运动范围中值
+        pos_diff = torch.abs(self.dof_pos[:, self.hip_indices] - target_hip_pos)  # 计算与中值的绝对偏差
+        reward = torch.exp(-10.0 * pos_diff)  # 指数衰减奖励，越接近中值奖励越高
+        print("reward_hip_abduction:",reward)
+        return torch.sum(reward, dim=1)
