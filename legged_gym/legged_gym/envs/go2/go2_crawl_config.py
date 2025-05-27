@@ -126,10 +126,9 @@ class Go2CrawlCfg( LeggedRobotCfg ):
             tracking_ang_vel = 1.0
 
             bounds_loss_coef = 0.0
-            locomotion_height = 1.5
+            locomotion_height = 2
             lin_vel_z = -0.0 #爬行任务把他设置为0
             ang_vel_xy = -0.1
-            orientation = 0.0
             torques = -0.00001#惩罚总扭矩大小的平方
             delta_torques = 0.#扭矩大小变化的平方
             dof_vel = 0.
@@ -144,13 +143,13 @@ class Go2CrawlCfg( LeggedRobotCfg ):
             dof_vel_limits = -0.0  #惩罚关节速度太接近极限
             hip_pos = -0.0#惩罚hip位置偏离default的程度
             dof_error = -0.0#-0.1# 惩罚所有关节位置偏离default的程度
-            torque_limits = -0.03#扭矩限制
+            torque_limits = -0.0#扭矩限制
             # ----add---
             orientation = -0.1#惩罚非水平姿态
             upward = 0.1#奖励直立状态
-            foot_clearance_up = -0.#惩罚足部高度误差，和足端横向移动
+            foot_clearance_up = -0.2#惩罚足部高度误差，和足端横向移动
             foot_mirror_up =-0.01 #镜像对称
-            hip_abduction = 0.5#鼓励hip接近0度
+            hip_abduction = 0.0#鼓励hip接近0度
 class Go2RoughCfgPPO( LeggedRobotCfgPPO ):
     class algorithm( LeggedRobotCfgPPO.algorithm ):
         entropy_coef = 0.01

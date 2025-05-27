@@ -239,7 +239,7 @@ class LeggedRobot(BaseTask):
         self.common_step_counter += 1
         # 更新高度计时器
         if self.crawl:
-            current_height = self.root_states[:, 2]
+            current_height = self.root_states[:, 2]-self.measured_heights[:, self.measured_heights.shape[1] // 2 + 1]
             height_ok = torch.abs(current_height - self.target_height) < 0.02  # 2cm容差范围
             self.height_timeout_buf = torch.where(height_ok, 0, self.height_timeout_buf + 1)
             # print("[debug]height_timeout_buf:", self.height_timeout_buf)
@@ -758,7 +758,7 @@ class LeggedRobot(BaseTask):
         if self.crawl : 
             self.height_timeout_buf = torch.zeros(self.num_envs, device=self.device)  # 高度超时计时器
             self.height_timeout_steps = int(10.0 / self.dt)  # 设置1秒超时（根据实际需求调整时间）
-            self.target_height = 0.15  # 设置目标高度（根据实际需求调整）
+            self.target_height = 0.2  # 设置目标高度（根据实际需求调整）
         # self.reach_goal_timer = torch.zeros(self.num_envs, dtype=torch.float, device=self.device, requires_grad=False)
 
         str_rng = self.cfg.domain_rand.motor_strength_range
