@@ -94,6 +94,7 @@ class LeggedRobot(BaseTask):
         self.height_samples = None
         self.debug_viz = True
         self.init_done = False
+        self.crawl = True 
         self._parse_cfg(self.cfg)
         super().__init__(self.cfg, sim_params, physics_engine, sim_device, headless)
 
@@ -236,7 +237,12 @@ class LeggedRobot(BaseTask):
 
         self.episode_length_buf += 1
         self.common_step_counter += 1
-
+        # 更新高度计时器
+        if self.crawl:
+            current_height = self.root_states[:, 2]
+            height_ok = torch.abs(current_height - self.target_height) < 0.02  # 2cm容差范围
+            self.height_timeout_buf = torch.where(height_ok, 0, self.height_timeout_buf + 1)
+            # print("[debug]height_timeout_buf:", self.height_timeout_buf)
         # prepare quantities
         self.base_quat[:] = self.root_states[:, 3:7]
         self.base_lin_vel[:] = quat_rotate_inverse(self.base_quat, self.root_states[:, 7:10])
@@ -295,16 +301,18 @@ class LeggedRobot(BaseTask):
         roll_cutoff = torch.abs(self.roll) > 1.5
         pitch_cutoff = torch.abs(self.pitch) > 1.5
         # reach_goal_cutoff = self.cur_goal_idx >= self.cfg.terrain.num_goals
+          
         height_cutoff = self.root_states[:, 2] < -0.25
-
         self.time_out_buf = self.episode_length_buf > self.max_episode_length # no terminal reward for time-outs
         # self.time_out_buf |= reach_goal_cutoff
+        if self.crawl :
+            height_timeout = self.height_timeout_buf > self.height_timeout_steps
+            self.reset_buf |= height_timeout
 
         self.reset_buf |= self.time_out_buf
         self.reset_buf |= roll_cutoff
         self.reset_buf |= pitch_cutoff
         self.reset_buf |= height_cutoff
-
     def reset_idx(self, env_ids):
         """ Reset some environments.
             Calls self._reset_dofs(env_ids), self._reset_root_states(env_ids), and self._resample_commands(env_ids)
@@ -331,7 +339,7 @@ class LeggedRobot(BaseTask):
         self.gym.simulate(self.sim)
         self.gym.fetch_results(self.sim, True)
         self.gym.refresh_rigid_body_state_tensor(self.sim)
-
+        
         # reset buffers
         self.last_actions[env_ids] = 0.
         self.last_dof_vel[env_ids] = 0.
@@ -344,7 +352,8 @@ class LeggedRobot(BaseTask):
         self.action_history_buf[env_ids, :, :] = 0.
         # self.cur_goal_idx[env_ids] = 0
         # self.reach_goal_timer[env_ids] = 0
-
+        if self.crawl:
+            self.height_timeout_buf[env_ids] = 0
         # fill extras
         self.extras["episode"] = {}
         for key in self.episode_sums.keys():
@@ -745,6 +754,11 @@ class LeggedRobot(BaseTask):
         self.last_torques = torch.zeros_like(self.torques)
         self.last_root_vel = torch.zeros_like(self.root_states[:, 7:13])
 
+        # ----------高度计时器--------------
+        if self.crawl : 
+            self.height_timeout_buf = torch.zeros(self.num_envs, device=self.device)  # 高度超时计时器
+            self.height_timeout_steps = int(10.0 / self.dt)  # 设置1秒超时（根据实际需求调整时间）
+            self.target_height = 0.15  # 设置目标高度（根据实际需求调整）
         # self.reach_goal_timer = torch.zeros(self.num_envs, dtype=torch.float, device=self.device, requires_grad=False)
 
         str_rng = self.cfg.domain_rand.motor_strength_range
@@ -1385,18 +1399,20 @@ class LeggedRobot(BaseTask):
         if self.cfg.terrain.measure_heights:
             root_h = self.root_states[:, 2] - self.measured_heights[:, self.measured_heights.shape[1] // 2 + 1]
             # print("[debug]done: ")
-            print("[debug]root_states[:, 2]:",self.root_states[:, 2])
-            print("[debug]measured_heights:",self.measured_heights[:, self.measured_heights.shape[1] // 2 + 1])
+            # print("[debug]root_states[:, 2]:",self.root_states[:, 2])
+            # print("[debug]measured_heights:",self.measured_heights[:, self.measured_heights.shape[1] // 2 + 1])
         else:
             root_h = self.root_states[:, 2]
-        root_h_error_loc = torch.sqrt(torch.square(self.commands[:, 4] - root_h))
+        root_h_error_loc = torch.sqrt(torch.square(self.target_height - root_h))
         root_h_error_rwd_loc = torch.exp(-10.0 * torch.square(root_h_error_loc) / self.cfg.rewards.tracking_sigma)
 
         return root_h_error_rwd_loc
     def _reward_hip_abduction(self):
         # 奖励hip关节外展运动
-        target_hip_pos = 0.5 * (self.dof_pos_limits[self.hip_indices, 0] + self.dof_pos_limits[self.hip_indices, 1])  # 取关节运动范围中值
-        pos_diff = torch.abs(self.dof_pos[:, self.hip_indices] - target_hip_pos)  # 计算与中值的绝对偏差
-        reward = torch.exp(-10.0 * pos_diff)  # 指数衰减奖励，越接近中值奖励越高
-        print("reward_hip_abduction:",reward)
+        thigh_pos = self.dof_pos[:, self.thigh_indices]  # 获取大腿关节角度
+        pos_diff = torch.abs(thigh_pos)  # 计算与0度的绝对偏差
+        reward = torch.exp(-5.0 * pos_diff)  # 指数衰减奖励，越接近0度奖励越高
         return torch.sum(reward, dim=1)
+    def _reward_termination(self):
+        height_timeout_termination = (self.height_timeout_buf > self.height_timeout_steps)  # 判断是否因高度超时终止
+        return - torch.where(height_timeout_termination, torch.ones_like(self.reset_buf), torch.zeros_like(self.reset_buf)).float() * 2.0

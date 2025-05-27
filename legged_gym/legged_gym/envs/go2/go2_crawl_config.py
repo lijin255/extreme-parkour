@@ -59,8 +59,28 @@ class Go2CrawlCfg( LeggedRobotCfg ):
             stepping_stone_distance = [0.02, 0.08]
             downsampled_scale = 0.075
             curriculum = True
-        
-    class commands:
+            terrain_dict = {"smooth slope": 0., 
+                            "pyramid_sloped": 0.,
+                            "discrete_obstacles": 0.2,
+                            "stepping_stones": 0., 
+                            "random_uniform_terrain": 0.8, 
+                            "discrete": 0., 
+                            "stepping stones": 0.,
+                            "gaps": 0., 
+                            "smooth flat": 0.,
+                            "pit": 0.,
+                            "wall": 0.0,
+                            "platform": 0.,
+                            "large stairs up": 0.,
+                            "large stairs down": 0.,
+                            "parkour": 0.,
+                            "parkour_hurdle": 0.,
+                            "parkour_flat": 0.,
+                            "parkour_step": 0.,
+                            "parkour_gap": 0.,
+                            "demo": 0.0,}
+            terrain_proportions = list(terrain_dict.values())
+    class commands( LeggedRobotCfg.commands ):
         curriculum = False
         max_curriculum = 1.
         num_commands = 5 # default: lin_vel_x, lin_vel_y, ang_vel_yaw, heading (in heading mode ang_vel_yaw is recomputed from heading error)
@@ -72,11 +92,12 @@ class Go2CrawlCfg( LeggedRobotCfg ):
         ang_vel_yaw_clip = 0.05
         # Easy ranges
         class ranges:
-            lin_vel_x = [-0.25, 0.5] # min max [m/s]
+            lin_vel_x = [-0., 0.5] # min max [m/s]
             lin_vel_y = [-0.2, 0.2]   # min max [m/s]
-            ang_vel_yaw = [-0.2, 0.2]    # min max [rad/s]
+            ang_vel_yaw = [-0.0, 0.]    # min max [rad/s]
             heading = [0, 0]
-            base_height = [0.1, 0.32]#TODO 修改为高度变化量指令
+            base_height = [0.25, 0.25]#TODO 修改为高度变化量指令
+
     class control( LeggedRobotCfg.control ):
         # PD Drive parameters:
         control_type = 'P'
@@ -100,27 +121,27 @@ class Go2CrawlCfg( LeggedRobotCfg ):
         base_height_target = 0.25
         clearance_height_target = -0.22
         class scales( LeggedRobotCfg.rewards.scales ):
-            termination = 0.0
-            tracking_lin_vel = 1.0
+            termination = 10.0
+            tracking_lin_vel = 1.5
             tracking_ang_vel = 1.0
 
             bounds_loss_coef = 0.0
-            locomotion_height = 0.4
+            locomotion_height = 1.5
             lin_vel_z = -0.0 #爬行任务把他设置为0
-            ang_vel_xy = -0.01
+            ang_vel_xy = -0.1
             orientation = 0.0
             torques = -0.00001#惩罚总扭矩大小的平方
-            delta_torques = -1.0e-7#扭矩大小变化的平方
-            dof_vel = -2.5e-7
-            dof_acc = -2.5e-7#扭矩速度变化的平方
+            delta_torques = 0.#扭矩大小变化的平方
+            dof_vel = 0.
+            dof_acc = 0.#扭矩速度变化的平方
             base_height = 0.0
-            feet_air_time = 0.1#脚步悬空
+            feet_air_time = 0.01#脚步悬空
             collision = -1.#所选位置的碰撞
             feet_stumble = 0.0
             action_rate = -0.001#惩罚动作的变化
             stand_still = -0.1
             dof_pos_limits = -0.0#惩罚关节位置太接近极限
-            dof_vel_limits = -0.1  #惩罚关节速度太接近极限
+            dof_vel_limits = -0.0  #惩罚关节速度太接近极限
             hip_pos = -0.0#惩罚hip位置偏离default的程度
             dof_error = -0.0#-0.1# 惩罚所有关节位置偏离default的程度
             torque_limits = -0.03#扭矩限制
@@ -128,8 +149,8 @@ class Go2CrawlCfg( LeggedRobotCfg ):
             orientation = -0.1#惩罚非水平姿态
             upward = 0.1#奖励直立状态
             foot_clearance_up = -0.#惩罚足部高度误差，和足端横向移动
-            foot_mirror_up =-0.1 #镜像对称
-            hip_abduction = 0.1#鼓励hip向外展
+            foot_mirror_up =-0.01 #镜像对称
+            hip_abduction = 0.5#鼓励hip接近0度
 class Go2RoughCfgPPO( LeggedRobotCfgPPO ):
     class algorithm( LeggedRobotCfgPPO.algorithm ):
         entropy_coef = 0.01

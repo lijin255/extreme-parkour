@@ -178,7 +178,7 @@ def play(args):
         env.commands[:,1] = 0
         env.commands[:,2] = 0
         env.commands[:,3] = 0
-        env.commands[:,4] = 0.25
+        env.commands[:,4] = 0.1
         # --------------------------------debug---------------------------- 
         obs, _, rews, dones, infos = env.step(actions.detach())
         if args.web:
