@@ -137,7 +137,7 @@ class LeggedRobotCfg(BaseConfig):
         max_error = 0.1 # for fast
         max_error_camera = 2
 
-        y_range = [-0.4, 0.4]
+        y_range = [-0.05, 0.05]
         
         edge_width_thresh = 0.05
         horizontal_scale = 0.05 # [m] influence computation time by a lot
@@ -199,7 +199,7 @@ class LeggedRobotCfg(BaseConfig):
         num_goals = 0
 
     class commands:
-        curriculum = False
+        curriculum = True
         max_curriculum = 1.
         num_commands = 5 # default: lin_vel_x, lin_vel_y, ang_vel_yaw, heading (in heading mode ang_vel_yaw is recomputed from heading error)
         resampling_time = 6. # time before command are changed[s]

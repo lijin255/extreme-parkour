@@ -81,22 +81,22 @@ class Go2CrawlCfg( LeggedRobotCfg ):
                             "demo": 0.0,}
             terrain_proportions = list(terrain_dict.values())
     class commands( LeggedRobotCfg.commands ):
-        curriculum = False
+        curriculum = True
         max_curriculum = 1.
         num_commands = 5 # default: lin_vel_x, lin_vel_y, ang_vel_yaw, heading (in heading mode ang_vel_yaw is recomputed from heading error)
         resampling_time = 6. # time before command are changed[s]
-        heading_command = True # if true: compute ang vel command from heading error
+        heading_command = False # if true: compute ang vel command from heading error
         
         lin_vel_x_clip = 0.1
         lin_vel_y_clip = 0.05
         ang_vel_yaw_clip = 0.05
         # Easy ranges
         class ranges:
-            lin_vel_x = [-0., 0.5] # min max [m/s]
+            lin_vel_x = [-0.3, 0.5] # min max [m/s]
             lin_vel_y = [-0.2, 0.2]   # min max [m/s]
-            ang_vel_yaw = [-0.0, 0.]    # min max [rad/s]
+            ang_vel_yaw = [-0.2, 0.2]    # min max [rad/s]
             heading = [0, 0]
-            base_height = [0.25, 0.25]#TODO 修改为高度变化量指令
+            base_height = [0.15, 0.32]#TODO 修改为高度变化量指令
 
     class control( LeggedRobotCfg.control ):
         # PD Drive parameters:

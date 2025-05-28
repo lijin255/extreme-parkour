@@ -240,7 +240,7 @@ class LeggedRobot(BaseTask):
         # 更新高度计时器
         if self.crawl:
             current_height = self.root_states[:, 2]-self.measured_heights[:, self.measured_heights.shape[1] // 2 + 1]
-            height_ok = torch.abs(current_height - self.target_height) < 0.02  # 2cm容差范围
+            height_ok = torch.abs(current_height - self.commands[:, 4]) < 0.02  # 2cm容差范围
             self.height_timeout_buf = torch.where(height_ok, 0, self.height_timeout_buf + 1)
             # print("[debug]height_timeout_buf:", self.height_timeout_buf)
         # prepare quantities
@@ -329,8 +329,8 @@ class LeggedRobot(BaseTask):
         if self.cfg.terrain.curriculum:
             self._update_terrain_curriculum(env_ids)
         # avoid updating command curriculum at each step since the maximum command is common to all envs
-        if self.cfg.commands.curriculum and (self.common_step_counter % self.max_episode_length==0):
-            self.update_command_curriculum(env_ids)
+        # if self.cfg.commands.curriculum and (self.common_step_counter % self.max_episode_length==0):
+        #     self.update_command_curriculum(env_ids)
 
         # reset robot states
         self._reset_dofs(env_ids)
@@ -398,9 +398,10 @@ class LeggedRobot(BaseTask):
         # if self.global_counter % 5 == 0:
         #     self.delta_yaw = self.target_yaw - self.yaw
         #     self.delta_next_yaw = self.next_target_yaw - self.yaw
-        obs_buf = torch.cat((#skill_vector, 
+        # print("[debug401]command",self.commands[:, :])
+        obs_buf = torch.cat((#skill_vector,
+                            self.base_lin_vel * self.obs_scales.lin_vel, #[1,3]
                             self.base_ang_vel  * self.obs_scales.ang_vel,   #[1,3]
-                            self.base_lin_vel * self.obs_scales.lin_vel,   #[1,3]
                             self.base_height_com,
                             imu_obs,    #[1,2]
                             # 0*self.delta_yaw[:, None], 
@@ -754,11 +755,7 @@ class LeggedRobot(BaseTask):
         self.last_torques = torch.zeros_like(self.torques)
         self.last_root_vel = torch.zeros_like(self.root_states[:, 7:13])
 
-        # ----------高度计时器--------------
-        if self.crawl : 
-            self.height_timeout_buf = torch.zeros(self.num_envs, device=self.device)  # 高度超时计时器
-            self.height_timeout_steps = int(10.0 / self.dt)  # 设置1秒超时（根据实际需求调整时间）
-            self.target_height = 0.2  # 设置目标高度（根据实际需求调整）
+        
         # self.reach_goal_timer = torch.zeros(self.num_envs, dtype=torch.float, device=self.device, requires_grad=False)
 
         str_rng = self.cfg.domain_rand.motor_strength_range
@@ -783,7 +780,11 @@ class LeggedRobot(BaseTask):
         self.base_height_com = torch.mean(self.base_height.unsqueeze(1) - self.measured_heights, dim=1,keepdim=True)
         self.projected_gravity = quat_rotate_inverse(self.base_quat, self.gravity_vec)
 
-
+        # ----------高度计时器--------------
+        if self.crawl : 
+            self.height_timeout_buf = torch.zeros(self.num_envs, device=self.device)  # 高度超时计时器
+            self.height_timeout_steps = int(10.0 / self.dt)  # 设置1秒超时（根据实际需求调整时间）
+            # self.target_height = self.commands[:, 4] # 设置目标高度（根据实际需求调整
         # joint positions offsets and PD gains
         self.default_dof_pos = torch.zeros(self.num_dof, dtype=torch.float, device=self.device, requires_grad=False)
         self.default_dof_pos_all = torch.zeros(self.num_envs, self.num_dof, dtype=torch.float, device=self.device, requires_grad=False)
@@ -1403,7 +1404,7 @@ class LeggedRobot(BaseTask):
             # print("[debug]measured_heights:",self.measured_heights[:, self.measured_heights.shape[1] // 2 + 1])
         else:
             root_h = self.root_states[:, 2]
-        root_h_error_loc = torch.sqrt(torch.square(self.target_height - root_h))
+        root_h_error_loc = torch.sqrt(torch.square(self.commands[:, 4] - root_h))
         root_h_error_rwd_loc = torch.exp(-10.0 * torch.square(root_h_error_loc) / self.cfg.rewards.tracking_sigma)
 
         return root_h_error_rwd_loc
