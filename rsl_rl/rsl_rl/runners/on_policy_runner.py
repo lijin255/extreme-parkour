@@ -129,8 +129,9 @@ class OnPolicyRunner:
         priv_reg_coef = 0.
         entropy_coef = 0.
         # initialize writer
-        # if self.log_dir is not None and self.writer is None:
-        #     self.writer = SummaryWriter(log_dir=self.log_dir, flush_secs=10)
+        if self.log_dir is not None and self.writer is None:
+            from torch.utils.tensorboard import SummaryWriter
+            self.writer = SummaryWriter(log_dir=self.log_dir, flush_secs=10)
         if init_at_random_ep_len:
             self.env.episode_length_buf = torch.randint_like(self.env.episode_length_buf, high=int(self.env.max_episode_length))
         obs = self.env.get_observations()
@@ -353,7 +354,11 @@ class OnPolicyRunner:
             wandb_dict['Train/mean_episode_length'] = statistics.mean(locs['lenbuffer'])
         
         wandb.log(wandb_dict, step=locs['it'])
-
+        # --------------tensorboard------
+        if self.writer:
+            for key, value in wandb_dict.items():
+                if isinstance(value, (int, float)):
+                    self.writer.add_scalar(key, value, locs['it'])
         str = f" \033[1m Learning iteration {locs['it']}/{self.current_learning_iteration + locs['num_learning_iterations']} \033[0m "
 
         if len(locs['rewbuffer']) > 0:
@@ -384,6 +389,7 @@ class OnPolicyRunner:
                        f"""{'ETA:':>{pad}} {mins:.0f} mins {secs:.1f} s\n""")
         print(log_string)
 
+    
     def log(self, locs, width=80, pad=35):
         self.tot_timesteps += self.num_steps_per_env * self.env.num_envs
         self.tot_time += locs['collection_time'] + locs['learn_time']
@@ -432,7 +438,11 @@ class OnPolicyRunner:
             # wandb_dict['Train/mean_episode_length/time', statistics.mean(locs['lenbuffer']), self.tot_time)
 
         wandb.log(wandb_dict, step=locs['it'])
-
+        # ---------------tensorboard----------
+        if self.writer:
+            for key, value in wandb_dict.items():
+                if isinstance(value, (int, float)):
+                    self.writer.add_scalar(key, value, locs['it'])
         str = f" \033[1m Learning iteration {locs['it']}/{self.current_learning_iteration + locs['num_learning_iterations']} \033[0m "
 
         if len(locs['rewbuffer']) > 0:

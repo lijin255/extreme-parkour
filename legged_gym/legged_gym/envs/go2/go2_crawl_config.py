@@ -147,7 +147,7 @@ class Go2CrawlCfg( LeggedRobotCfg ):
             # ----add---
             orientation = -0.1#惩罚非水平姿态
             upward = 0.1#奖励直立状态
-            foot_clearance_up = -0.2#惩罚足部高度误差，和足端横向移动
+            foot_clearance_up = -0.#惩罚足部高度误差，和足端横向移动
             foot_mirror_up =-0.01 #镜像对称
             hip_abduction = 0.0#鼓励hip接近0度
 class Go2RoughCfgPPO( LeggedRobotCfgPPO ):

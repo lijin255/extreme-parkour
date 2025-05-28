@@ -400,8 +400,9 @@ class LeggedRobot(BaseTask):
         #     self.delta_next_yaw = self.next_target_yaw - self.yaw
         # print("[debug401]command",self.commands[:, :])
         obs_buf = torch.cat((#skill_vector,
-                            self.base_lin_vel * self.obs_scales.lin_vel, #[1,3]
+                             #[1,3]
                             self.base_ang_vel  * self.obs_scales.ang_vel,   #[1,3]
+                            self.base_lin_vel * self.obs_scales.lin_vel,
                             self.base_height_com,
                             imu_obs,    #[1,2]
                             # 0*self.delta_yaw[:, None], 
